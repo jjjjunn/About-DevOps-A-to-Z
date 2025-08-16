@@ -10,6 +10,12 @@
 7. [CI/CD 파이프라인 구축](#7-cicd-파이프라인-구축)
 8. [모니터링 및 로깅](#8-모니터링-및-로깅)
 9. [문제 해결 가이드](#9-문제-해결-가이드)
+10. [보안 강화](#10-보안-강화)
+11. [데이터베이스 운영 전략](#11-데이터베이스-운영-전략)
+12. [Observability](#12-observability)
+13. [테스트 전략](#13-테스트-전략)
+14. [고급 운영 전략](#14-고급-운영-전략)
+
 
 ---
 
@@ -909,6 +915,104 @@ docker exec -it container_name /bin/bash
 docker logs container_name -f
 ```
 
+## 10. 보안(Security) 강화
+### 🔐 HTTPS 적용
+- Cloud Run: 기본적으로 HTTPS 지원
+- AWS ECS: ALB(Application Load Balancer) + ACM(AWS Certificate Manager)
+- Azure: Front Door, Application Gateway
+
+### 🔑 비밀 관리
+- 환경 변수 대신 Secret Manager (GCP), AWS Secrets Manager, Azure Key Vault 사용 권장
+```
+# 예시: GCP Secret Manager에서 DATABASE_URL 불러오기
+gcloud secrets versions access latest --secret=DATABASE_URL
+```
+
+### 👥 인증/인가
+- JWT 외에도 OAuth2, OpenID Connect(OIDC) 고려
+- RBAC(Role-Based Access Control) 로 권한 분리
+---
+
+## 11. 데이터베이스 운영 전략
+### 🗂️ 마이그레이션
+- Alembic 사용해 DB 스키마 버전 관리
+```
+alembic revision --autogenerate -m "add user table"
+alembic upgrade head
+```
+
+### 💾 백업 및 복구
+- Cloud SQL / RDS 자동 백업 활성화
+- Point-in-Time Recovery(PITR) 로 특정 시점 복구 가능
+
+
+### ⚡ 성능 최적화
+- 인덱스 튜닝 (EXPLAIN 활용)
+- Redis 캐싱 도입 → DB 부하 감소
+- ORM(N+1 문제) 최적화
+
+---
+
+## 12. Observability (관찰성)
+### 📊 메트릭 수집
+- Prometheus + Grafana
+- Cloud Monitoring, CloudWatch, Azure Monitor 도 활용 가능
+
+### 🔍 분산 트레이싱
+- OpenTelemetry 표준 사용 → Jaeger, Zipkin 연동 가능
+
+### 🔔 알림
+- 장애 감지 시 Slack, Discord, Email로 자동 알림 설정
+```yaml
+# Prometheus Alertmanager 예시
+groups:
+  - name: app-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status="500"}[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+```
+
+---
+
+## 13. 테스트 전략
+###🧪 단위 테스트
+- pytest 로 함수 단위 검증
+```
+pytest -v
+```
+
+### 🔗 통합 테스트
+- Docker Compose 로 DB/Redis 포함한 통합 테스트
+- Testcontainers 라이브러리 활용 가능
+
+###🚀 로드 테스트
+- Locust 또는 k6 사용 → API 성능 검증
+
+```
+locust -f load_test.py --headless -u 100 -r 10 -t 5m
+```
+
+---
+
+## 14. 고급 운영 전략
+### 🔄 배포 전략
+- Blue-Green 배포: 두 환경 운영 후 전환
+- Canary 배포: 일부 트래픽만 새 버전에 전달
+
+### ⚙️ Auto Scaling
+- Cloud Run: 요청량 기반 자동 확장
+- AWS ECS: CPU/Memory 기준 확장 정책 설정
+- Kubernetes: HPA(Horizontal Pod Autoscaler)
+
+### 💰 비용 최적화
+- 서버리스 최대 활용 (Cloud Run, Lambda, ACI)
+- Spot Instance / Preemptible VM 으로 저비용 운영
+
+---
+
 ### 📞 지원 및 리소스
 
 #### 유용한 링크
@@ -928,6 +1032,7 @@ docker logs container_name -f
 ## 🎯 마무리
 
 이 가이드를 따라하면 FastAPI 애플리케이션을 다양한 클라우드 플랫폼에 성공적으로 배포할 수 있습니다. 
+실무에서는 이 문서를 기반으로 DevOps 플레이북을 만들어두면 팀 전체가 효율적으로 협업할 수 있습니다.
 
 ### 📋 체크리스트
 - [ ] 로컬 개발 환경 설정 완료
@@ -944,3 +1049,4 @@ docker logs container_name -f
 4. **백업 및 재해 복구**: 데이터 백업 전략 수립
 
 **Happy Coding! 🎉**
+
